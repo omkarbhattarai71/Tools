@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Watermarker Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f4f4f4;
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        input[type="file"], input[type="text"] {
+            margin: 20px 0;
+        }
+        .output img {
+            max-width: 100%;
+            height: auto;
+            margin-top: 20px;
+        }
+        .download-btn {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: #3498db;
+            color: #fff;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Image Watermarker Tool</h1>
+        <input type="file" id="image-upload" accept="image/*">
+        <input type="text" id="watermark-text" placeholder="Enter watermark text">
+        <div class="output">
+            <img id="watermarked-image" src="" alt="Watermarked Image" style="display:none;">
+            <a id="download-btn" class="download-btn" style="display:none;">Download Watermarked Image</a>
+        </div>
+    </div>
+
+    <script>
+        const imageUpload = document.getElementById('image-upload');
+        const watermarkText = document.getElementById('watermark-text');
+        const watermarkedImage = document.getElementById('watermarked-image');
+        const downloadBtn = document.getElementById('download-btn');
+
+        imageUpload.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        ctx.drawImage(img, 0, 0);
+
+                        ctx.font = '30px Arial';
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                        ctx.fillText(watermarkText.value, 50, 50);
+
+                        const watermarkedUrl = canvas.toDataURL('image/jpeg', 0.9);
+                        watermarkedImage.src = watermarkedUrl;
+                        watermarkedImage.style.display = 'block';
+                        downloadBtn.href = watermarkedUrl;
+                        downloadBtn.download = `watermarked-image.jpg`;
+                        downloadBtn.style.display = 'inline-block';
+                    };
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+</body>
+</html>
