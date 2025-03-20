@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Watermarker Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f4f4f4;
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        input[type="file"], input[type="text"] {
+            margin: 20px 0;
+        }
+        .download-btn {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: #3498db;
+            color: #fff;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PDF Watermarker Tool</h1>
+        <input type="file" id="pdf-upload" accept="application/pdf">
+        <input type="text" id="watermark-text" placeholder="Enter watermark text">
+        <div class="output">
+            <a id="download-btn" class="download-btn" style="display:none;">Download Watermarked PDF</a>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <script>
+        const pdfUpload = document.getElementById('pdf-upload');
+        const watermarkText = document.getElementById('watermark-text');
+        const downloadBtn = document.getElementById('download-btn');
+
+        pdfUpload.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+                const pages = pdfDoc.getPages();
+
+                pages.forEach((page) => {
+                    const { width, height } = page.getSize();
+                    page.drawText(watermarkText.value, {
+                        x: 50,
+                        y: height - 50,
+                        size: 30,
+                        color: PDFLib.rgb(0.5, 0.5, 0.5),
+                        opacity: 0.5,
+                    });
+                });
+
+                const watermarkedPdf = await pdfDoc.save();
+                const blob = new Blob([watermarkedPdf], { type: 'application/pdf' });
+                downloadBtn.href = URL.createObjectURL(blob);
+                downloadBtn.download = `watermarked-pdf.pdf`;
+                downloadBtn.style.display = 'inline-block';
+            }
+        });
+    </script>
+</body>
+</html>
