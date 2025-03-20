@@ -63,8 +63,6 @@
         <p>&copy; 2023 Online Tools Hub. All rights reserved.</p>
     </footer>
 
-    <!-- PDF-Lib Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
     <script>
         const pdfUpload = document.getElementById('pdf-upload');
         const originalSize = document.getElementById('original-size');
@@ -76,29 +74,21 @@
             if (file) {
                 originalSize.textContent = `${(file.size / 1024).toFixed(2)} KB`;
 
-                const reader = new FileReader();
-                reader.onload = async (e) => {
-                    const pdfData = new Uint8Array(e.target.result);
+                // Upload the file to the backend
+                const formData = new FormData();
+                formData.append("file", file);
 
-                    // Load the PDF
-                    const pdfDoc = await PDFLib.PDFDocument.load(pdfData);
+                const response = await fetch("/compress-pdf", {
+                    method: "POST",
+                    body: formData,
+                });
 
-                    // Compress the PDF by reducing image quality
-                    const pages = pdfDoc.getPages();
-                    pages.forEach((page) => {
-                        const { width, height } = page.getSize();
-                        page.setSize(width, height); // No resizing, just an example
-                    });
-
-                    // Save the compressed PDF
-                    const compressedPdfBytes = await pdfDoc.save({ useObjectStreams: true });
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
 
                     // Display compressed size
-                    compressedSize.textContent = `${(compressedPdfBytes.length / 1024).toFixed(2)} KB`;
-
-                    // Create a download link
-                    const blob = new Blob([compressedPdfBytes], { type: 'application/pdf' });
-                    const url = URL.createObjectURL(blob);
+                    compressedSize.textContent = `${(blob.size / 1024).toFixed(2)} KB`;
 
                     // Set the download link
                     downloadBtn.href = url;
@@ -109,8 +99,9 @@
                     downloadBtn.addEventListener('click', () => {
                         setTimeout(() => URL.revokeObjectURL(url), 100);
                     });
-                };
-                reader.readAsArrayBuffer(file);
+                } else {
+                    alert("Failed to compress the PDF. Please try again.");
+                }
             }
         });
     </script>
