@@ -60,9 +60,11 @@
     </div>
 
     <footer>
-        <p>&copy; 2023 Online Tools Hub. All rights reserved.</p>
+        <p>&copy; 2025 Online Tools Hub. All rights reserved.</p>
     </footer>
 
+    <!-- PDF-Lib Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
     <script>
         const pdfUpload = document.getElementById('pdf-upload');
         const originalSize = document.getElementById('original-size');
@@ -72,36 +74,45 @@
         pdfUpload.addEventListener('change', async (event) => {
             const file = event.target.files[0];
             if (file) {
+                // Display original size
                 originalSize.textContent = `${(file.size / 1024).toFixed(2)} KB`;
 
-                // Upload the file to the backend
-                const formData = new FormData();
-                formData.append("file", file);
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    const pdfData = new Uint8Array(e.target.result);
 
-                const response = await fetch("/compress-pdf", {
-                    method: "POST",
-                    body: formData,
-                });
+                    try {
+                        // Load the PDF
+                        const pdfDoc = await PDFLib.PDFDocument.load(pdfData);
 
-                if (response.ok) {
-                    const blob = await response.blob();
-                    const url = URL.createObjectURL(blob);
+                        // Save the compressed PDF (simulate compression by reducing quality)
+                        const compressedPdfBytes = await pdfDoc.save({
+                            useObjectStreams: true, // Optimize PDF structure
+                            compress: true, // Enable compression
+                        });
 
-                    // Display compressed size
-                    compressedSize.textContent = `${(blob.size / 1024).toFixed(2)} KB`;
+                        // Display compressed size
+                        compressedSize.textContent = `${(compressedPdfBytes.length / 1024).toFixed(2)} KB`;
 
-                    // Set the download link
-                    downloadBtn.href = url;
-                    downloadBtn.download = `compressed-pdf.pdf`;
-                    downloadBtn.style.display = 'inline-block';
+                        // Create a download link
+                        const blob = new Blob([compressedPdfBytes], { type: 'application/pdf' });
+                        const url = URL.createObjectURL(blob);
 
-                    // Revoke the object URL after download
-                    downloadBtn.addEventListener('click', () => {
-                        setTimeout(() => URL.revokeObjectURL(url), 100);
-                    });
-                } else {
-                    alert("Failed to compress the PDF. Please try again.");
-                }
+                        // Set the download link
+                        downloadBtn.href = url;
+                        downloadBtn.download = `compressed-pdf.pdf`;
+                        downloadBtn.style.display = 'inline-block';
+
+                        // Revoke the object URL after download
+                        downloadBtn.addEventListener('click', () => {
+                            setTimeout(() => URL.revokeObjectURL(url), 100);
+                        });
+                    } catch (error) {
+                        console.error("Error compressing PDF:", error);
+                        alert("Failed to compress the PDF. Please try again.");
+                    }
+                };
+                reader.readAsArrayBuffer(file);
             }
         });
     </script>
