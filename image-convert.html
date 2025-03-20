@@ -23,6 +23,18 @@
         input[type="file"], select {
             margin: 20px 0;
         }
+        .size-info {
+            margin: 20px 0;
+            font-size: 1.1rem;
+            color: #333;
+        }
+        .output img {
+            max-width: 100%;
+            height: auto;
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
         .download-btn {
             display: inline-block;
             margin-top: 20px;
@@ -31,6 +43,13 @@
             color: #fff;
             border-radius: 5px;
             text-decoration: none;
+        }
+        footer {
+            margin-top: 40px;
+            padding: 20px;
+            background: #2c3e50;
+            color: #fff;
+            border-radius: 10px 10px 0 0;
         }
     </style>
 </head>
@@ -42,19 +61,33 @@
             <option value="image/jpeg">JPEG</option>
             <option value="image/png">PNG</option>
         </select>
+        <div class="size-info">
+            <p>Original Size: <span id="original-size">-</span></p>
+            <p>Converted Size: <span id="converted-size">-</span></p>
+        </div>
         <div class="output">
+            <img id="converted-image" src="" alt="Converted Image" style="display:none;">
             <a id="download-btn" class="download-btn" style="display:none;">Download Converted Image</a>
         </div>
     </div>
 
+    <footer>
+        <p>&copy; 2025 Online Tools Hub. All rights reserved.</p>
+    </footer>
+
     <script>
         const imageUpload = document.getElementById('image-upload');
         const formatSelect = document.getElementById('format');
+        const originalSize = document.getElementById('original-size');
+        const convertedSize = document.getElementById('converted-size');
+        const convertedImage = document.getElementById('converted-image');
         const downloadBtn = document.getElementById('download-btn');
 
         imageUpload.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
+                originalSize.textContent = `${(file.size / 1024).toFixed(2)} KB`;
+
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const img = new Image();
@@ -68,6 +101,12 @@
 
                         const format = formatSelect.value;
                         const convertedUrl = canvas.toDataURL(format, 0.9);
+                        convertedImage.src = convertedUrl;
+                        convertedImage.style.display = 'block';
+
+                        const blob = dataURLtoBlob(convertedUrl);
+                        convertedSize.textContent = `${(blob.size / 1024).toFixed(2)} KB`;
+
                         downloadBtn.href = convertedUrl;
                         downloadBtn.download = `converted-image.${format.split('/')[1]}`;
                         downloadBtn.style.display = 'inline-block';
@@ -76,6 +115,18 @@
                 reader.readAsDataURL(file);
             }
         });
+
+        function dataURLtoBlob(dataURL) {
+            const arr = dataURL.split(',');
+            const mime = arr[0].match(/:(.*?);/)[1];
+            const bstr = atob(arr[1]);
+            let n = bstr.length;
+            const u8arr = new Uint8Array(n);
+            while (n--) {
+                u8arr[n] = bstr.charCodeAt(n);
+            }
+            return new Blob([u8arr], { type: mime });
+        }
     </script>
 </body>
 </html>
