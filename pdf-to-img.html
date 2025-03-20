@@ -13,7 +13,7 @@
             text-align: center;
         }
         .container {
-            max-width: 600px;
+            max-width: 800px;
             margin: 0 auto;
             background: #fff;
             padding: 20px;
@@ -26,4 +26,86 @@
         .output img {
             max-width: 100%;
             height: auto;
-            margin-top: 20
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .download-btn {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: #3498db;
+            color: #fff;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PDF to Image Converter</h1>
+        <input type="file" id="pdf-upload" accept="application/pdf">
+        <div class="output" id="output"></div>
+    </div>
+
+    <!-- PDF.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+    <script>
+        const pdfUpload = document.getElementById('pdf-upload');
+        const output = document.getElementById('output');
+
+        pdfUpload.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    const pdfData = new Uint8Array(e.target.result);
+
+                    // Load the PDF
+                    const loadingTask = pdfjsLib.getDocument({ data: pdfData });
+                    const pdf = await loadingTask.promise;
+
+                    // Clear previous output
+                    output.innerHTML = '';
+
+                    // Loop through each page
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+
+                        // Set the scale for rendering
+                        const scale = 1.5;
+                        const viewport = page.getViewport({ scale });
+
+                        // Create a canvas for rendering
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+
+                        // Render the page into the canvas
+                        const renderContext = {
+                            canvasContext: context,
+                            viewport: viewport,
+                        };
+                        await page.render(renderContext).promise;
+
+                        // Convert the canvas to an image
+                        const image = new Image();
+                        image.src = canvas.toDataURL('image/jpeg');
+                        output.appendChild(image);
+
+                        // Add a download button for each image
+                        const downloadBtn = document.createElement('a');
+                        downloadBtn.href = canvas.toDataURL('image/jpeg');
+                        downloadBtn.download = `page-${i}.jpg`;
+                        downloadBtn.textContent = `Download Page ${i}`;
+                        downloadBtn.className = 'download-btn';
+                        output.appendChild(downloadBtn);
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        });
+    </script>
+</body>
+</html>
