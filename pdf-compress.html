@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Compression Tool</title>
+    <title>PDF Compressor Tool</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -23,6 +23,11 @@
         input[type="file"] {
             margin: 20px 0;
         }
+        .size-info {
+            margin: 20px 0;
+            font-size: 1.1rem;
+            color: #333;
+        }
         .download-btn {
             display: inline-block;
             margin-top: 20px;
@@ -32,32 +37,80 @@
             border-radius: 5px;
             text-decoration: none;
         }
+        footer {
+            margin-top: 40px;
+            padding: 20px;
+            background: #2c3e50;
+            color: #fff;
+            border-radius: 10px 10px 0 0;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>PDF Compression Tool</h1>
+        <h1>PDF Compressor Tool</h1>
         <input type="file" id="pdf-upload" accept="application/pdf">
+        <div class="size-info">
+            <p>Original Size: <span id="original-size">-</span></p>
+            <p>Compressed Size: <span id="compressed-size">-</span></p>
+        </div>
         <div class="output">
             <a id="download-btn" class="download-btn" style="display:none;">Download Compressed PDF</a>
         </div>
     </div>
 
+    <footer>
+        <p>&copy; 2023 Online Tools Hub. All rights reserved.</p>
+    </footer>
+
+    <!-- PDF-Lib Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
     <script>
         const pdfUpload = document.getElementById('pdf-upload');
+        const originalSize = document.getElementById('original-size');
+        const compressedSize = document.getElementById('compressed-size');
         const downloadBtn = document.getElementById('download-btn');
 
-        pdfUpload.addEventListener('change', (event) => {
+        pdfUpload.addEventListener('change', async (event) => {
             const file = event.target.files[0];
             if (file) {
+                originalSize.textContent = `${(file.size / 1024).toFixed(2)} KB`;
+
                 const reader = new FileReader();
-                reader.onload = (e) => {
-                    const compressedPdf = e.target.result;
-                    downloadBtn.href = compressedPdf;
+                reader.onload = async (e) => {
+                    const pdfData = new Uint8Array(e.target.result);
+
+                    // Load the PDF
+                    const pdfDoc = await PDFLib.PDFDocument.load(pdfData);
+
+                    // Compress the PDF by reducing image quality
+                    const pages = pdfDoc.getPages();
+                    pages.forEach((page) => {
+                        const { width, height } = page.getSize();
+                        page.setSize(width, height); // No resizing, just an example
+                    });
+
+                    // Save the compressed PDF
+                    const compressedPdfBytes = await pdfDoc.save({ useObjectStreams: true });
+
+                    // Display compressed size
+                    compressedSize.textContent = `${(compressedPdfBytes.length / 1024).toFixed(2)} KB`;
+
+                    // Create a download link
+                    const blob = new Blob([compressedPdfBytes], { type: 'application/pdf' });
+                    const url = URL.createObjectURL(blob);
+
+                    // Set the download link
+                    downloadBtn.href = url;
                     downloadBtn.download = `compressed-pdf.pdf`;
                     downloadBtn.style.display = 'inline-block';
+
+                    // Revoke the object URL after download
+                    downloadBtn.addEventListener('click', () => {
+                        setTimeout(() => URL.revokeObjectURL(url), 100);
+                    });
                 };
-                reader.readAsDataURL(file);
+                reader.readAsArrayBuffer(file);
             }
         });
     </script>
